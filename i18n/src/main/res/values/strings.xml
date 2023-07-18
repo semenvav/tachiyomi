@@ -26,6 +26,7 @@
     <string name="label_backup">Backup and restore</string>
     <string name="label_data_storage">Data and storage</string>
     <string name="label_stats">Statistics</string>
+    <string name="label_download_stats">Download statistics</string>
     <string name="label_migration">Migrate</string>
     <string name="label_extensions">Extensions</string>
     <string name="label_extension_info">Extension info</string>
@@ -66,6 +67,7 @@
     <string name="action_sort_latest_chapter">Latest chapter</string>
     <string name="action_sort_chapter_fetch_date">Chapter fetch date</string>
     <string name="action_sort_date_added">Date added</string>
+    <string name="action_sort_size">Size</string>
     <string name="action_search">Search</string>
     <string name="action_search_hint">Search…</string>
     <string name="action_search_settings">Search settings</string>
@@ -107,6 +109,9 @@
     <string name="action_open_in_browser">Open in browser</string>
     <string name="action_show_manga">Show entry</string>
     <string name="action_copy_to_clipboard">Copy to clipboard</string>
+    <string name="action_group_by_category">Category</string>
+    <string name="action_group_by_source">Source</string>
+    <string name="action_ungroup">ungroup</string>
     <!-- Do not translate "WebView" -->
     <string name="action_open_in_web_view">Open in WebView</string>
     <string name="action_web_view" translatable="false">WebView</string>
@@ -131,6 +136,7 @@
     <string name="action_cancel_all">Cancel all</string>
     <string name="cancel_all_for_series">Cancel all for this series</string>
     <string name="action_sort">Sort</string>
+    <string name="action_group">Group</string>
     <string name="action_order_by_upload_date">By upload date</string>
     <string name="action_order_by_chapter_number">By chapter number</string>
     <string name="action_newest">Newest</string>
@@ -157,6 +163,13 @@
     <string name="action_start_downloading_now">Start downloading now</string>
     <string name="action_faq_and_guides">FAQ and Guides</string>
     <string name="action_not_now">Not now</string>
+
+    <!-- Memory units -->
+    <string name="memory_unit_b">B</string>
+    <string name="memory_unit_kb">KB</string>
+    <string name="memory_unit_mb">MB</string>
+    <string name="memory_unit_gb">GB</string>
+
 
     <!-- Operations -->
     <string name="loading">Loading…</string>

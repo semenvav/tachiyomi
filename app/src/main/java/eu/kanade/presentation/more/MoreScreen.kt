@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.FileDownloadDone
 import androidx.compose.material.icons.outlined.GetApp
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Info
@@ -48,6 +49,7 @@ fun MoreScreen(
     onClickDataAndStorage: () -> Unit,
     onClickSettings: () -> Unit,
     onClickAbout: () -> Unit,
+    onClickDownloadState: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
 
@@ -137,6 +139,13 @@ fun MoreScreen(
                     title = stringResource(R.string.label_stats),
                     icon = Icons.Outlined.QueryStats,
                     onPreferenceClick = onClickStats,
+                )
+            }
+            item {
+                TextPreferenceWidget(
+                    title = stringResource(R.string.label_download_stats),
+                    icon = Icons.Outlined.FileDownloadDone,
+                    onPreferenceClick = onClickDownloadState,
                 )
             }
             item {
