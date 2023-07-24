@@ -1,5 +1,6 @@
 package eu.kanade.presentation.more.download
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -160,6 +161,9 @@ private fun DownloadStatsAppBar(
             navigateUp = navigateUp,
             onMultiDeleteClicked = onMultiDeleteClicked,
         )
+        BackHandler(
+            onBack = onCancelActionMode,
+        )
     } else {
         SearchToolbar(
             navigateUp = navigateUp,
@@ -212,6 +216,9 @@ private fun DownloadStatsAppBar(
             },
             scrollBehavior = scrollBehavior,
         )
+        BackHandler(
+            onBack = { onChangeSearchQuery(null) },
+        )
     }
 }
 
@@ -230,7 +237,7 @@ private fun DownloadStatsActionAppBar(
         modifier = modifier,
         title = stringResource(R.string.label_download_stats),
         onCancelActionMode = onCancelActionMode,
-        actions = {
+        actionModeActions = {
             AppBarActions(
                 listOf(
                     AppBar.Action(
@@ -251,6 +258,7 @@ private fun DownloadStatsActionAppBar(
                 ),
             )
         },
+        actionModeCounter = selected.size,
         scrollBehavior = scrollBehavior,
         navigateUp = navigateUp,
     )
@@ -296,7 +304,7 @@ fun SortDropdownMenu(
         onDismissRequest = onDismissRequest,
     ) {
         listOfNotNull(
-            SortingMode.BY_ALPHABET to stringResource(R.string.action_sort_alpha),
+            SortingMode.BY_ALPHABET to stringResource(R.string.action_sort_A_Z),
             SortingMode.BY_SIZE to stringResource(R.string.action_sort_size),
         ).map { (mode, string) ->
             SortItem(

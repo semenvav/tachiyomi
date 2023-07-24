@@ -58,6 +58,7 @@
     <!-- reserved for #4048 -->
     <string name="action_filter_empty">Remove filter</string>
     <string name="action_sort_alpha">Alphabetically</string>
+    <string name="action_sort_A_Z">A-Z</string>
     <string name="action_sort_count">Total entries</string>
     <string name="action_sort_total">Total chapters</string>
     <string name="action_sort_last_read">Last read</string>
