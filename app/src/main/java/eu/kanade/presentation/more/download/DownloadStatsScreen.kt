@@ -216,9 +216,11 @@ private fun DownloadStatsAppBar(
             },
             scrollBehavior = scrollBehavior,
         )
-        BackHandler(
-            onBack = { onChangeSearchQuery(null) },
-        )
+        if (searchQuery != null) {
+            BackHandler(
+                onBack = { onChangeSearchQuery(null) },
+            )
+        }
     }
 }
 

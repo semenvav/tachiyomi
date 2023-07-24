@@ -298,6 +298,8 @@ class DownloadStatsScreenModel(
         mutableState.update { it.copy(searchQuery = query) }
         if (query != null) {
             preferenceStore.getString("search_query", "").set(query)
+        } else {
+            preferenceStore.getString("search_query", "").delete()
         }
     }
 
