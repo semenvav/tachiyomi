@@ -26,6 +26,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -235,9 +237,17 @@ fun CategoryList(
     onSelected: (DownloadStatManga, Boolean, Boolean, Boolean) -> Unit,
     categoryMap: Map<String, List<DownloadStatManga>>,
 ) {
-    val expanded = remember {
-        mutableStateMapOf(*categoryMap.keys.toList().map { it to false }.toTypedArray())
-    }
+    val categoryExpandedMapSaver: Saver<MutableMap<String, Boolean>, *> = Saver(
+        save = { map -> map.toMap() },
+        restore = { map -> mutableStateMapOf(*map.toList().toTypedArray()) },
+    )
+
+    val expanded = rememberSaveable(
+        saver = categoryExpandedMapSaver,
+        key = "CategoryExpandedMap",
+        init = { mutableStateMapOf(*categoryMap.keys.toList().map { it to false }.toTypedArray()) },
+    )
+
     FastScrollLazyColumn(contentPadding = contentPadding) {
         categoryMap.forEach { (category, items) ->
             downloadStatGroupUiItem(
