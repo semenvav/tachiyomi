@@ -22,8 +22,6 @@ import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
 import java.io.File
 import java.util.TreeMap
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
 
 class DownloadStatsScreenModel(
     private val getLibraryManga: GetLibraryManga = Injekt.get(),
@@ -99,32 +97,13 @@ class DownloadStatsScreenModel(
     }
 
     private fun getFileSize(file: File): Long {
-        val archiveFormats = setOf(".zip", ".cbz", ".rar", ".cbr")
         return if (file.isDirectory) {
             getFolderSize(file.path)
         } else if (file.isFile) {
             file.length()
-        } else if (file.extension.lowercase() in archiveFormats) {
-            getZipFileSize(file)
         } else {
             0
         }
-    }
-
-    private fun getZipFileSize(file: File): Long {
-        var size: Long = 0
-
-        val zipFile = ZipFile(file)
-        val entries = zipFile.entries()
-
-        while (entries.hasMoreElements()) {
-            val entry: ZipEntry = entries.nextElement()
-            size += entry.size
-        }
-
-        zipFile.close()
-
-        return size
     }
 
     fun runSortAction(mode: SortingMode) {
