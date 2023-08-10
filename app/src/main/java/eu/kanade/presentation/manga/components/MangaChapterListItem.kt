@@ -66,6 +66,7 @@ fun MangaChapterListItem(
     read: Boolean,
     bookmark: Boolean,
     selected: Boolean,
+    localChapter: Boolean,
     downloadIndicatorEnabled: Boolean,
     downloadStateProvider: () -> Download.State,
     downloadProgressProvider: () -> Int,
@@ -75,6 +76,7 @@ fun MangaChapterListItem(
     onClick: () -> Unit,
     onDownloadClick: ((ChapterDownloadAction) -> Unit)?,
     onChapterSwipe: (LibraryPreferences.ChapterSwipeAction) -> Unit,
+    onLocalActionClick: ((LocalChapterAction) -> Unit)?,
 ) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -204,13 +206,19 @@ fun MangaChapterListItem(
                     }
                 }
 
-                if (onDownloadClick != null) {
+                if (onDownloadClick != null && !localChapter) {
                     ChapterDownloadIndicator(
                         enabled = downloadIndicatorEnabled,
                         modifier = Modifier.padding(start = 4.dp),
                         downloadStateProvider = downloadStateProvider,
                         downloadProgressProvider = downloadProgressProvider,
                         onClick = onDownloadClick,
+                    )
+                }
+                if (onLocalActionClick != null && localChapter) {
+                    LocalChapterIndicator(
+                        modifier = Modifier.padding(start = 4.dp),
+                        onClick = onLocalActionClick,
                     )
                 }
             }

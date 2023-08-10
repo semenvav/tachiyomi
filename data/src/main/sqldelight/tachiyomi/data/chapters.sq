@@ -14,6 +14,7 @@ CREATE TABLE chapters(
     date_fetch INTEGER NOT NULL,
     date_upload INTEGER NOT NULL,
     last_modified_at INTEGER NOT NULL DEFAULT 0,
+    local_chapter INTEGER AS Boolean NOT NULL DEFAULT 0,
     FOREIGN KEY(manga_id) REFERENCES mangas (_id)
     ON DELETE CASCADE
 );
@@ -62,8 +63,8 @@ DELETE FROM chapters
 WHERE _id IN :chapterIds;
 
 insert:
-INSERT INTO chapters(manga_id, url, name, scanlator, read, bookmark, last_page_read, chapter_number, source_order, date_fetch, date_upload, last_modified_at)
-VALUES (:mangaId, :url, :name, :scanlator, :read, :bookmark, :lastPageRead, :chapterNumber, :sourceOrder, :dateFetch, :dateUpload, strftime('%s', 'now'));
+INSERT INTO chapters(manga_id, url, name, scanlator, read, bookmark, last_page_read, chapter_number, source_order, date_fetch, date_upload, last_modified_at, local_chapter)
+VALUES (:mangaId, :url, :name, :scanlator, :read, :bookmark, :lastPageRead, :chapterNumber, :sourceOrder, :dateFetch, :dateUpload, strftime('%s', 'now'), :localChapter);
 
 update:
 UPDATE chapters
@@ -77,7 +78,8 @@ SET manga_id = coalesce(:mangaId, manga_id),
     chapter_number = coalesce(:chapterNumber, chapter_number),
     source_order = coalesce(:sourceOrder, source_order),
     date_fetch = coalesce(:dateFetch, date_fetch),
-    date_upload = coalesce(:dateUpload, date_upload)
+    date_upload = coalesce(:dateUpload, date_upload),
+    local_chapter = coalesce(:localChapter, local_chapter)
 WHERE _id = :chapterId;
 
 selectLastInsertedRowId:

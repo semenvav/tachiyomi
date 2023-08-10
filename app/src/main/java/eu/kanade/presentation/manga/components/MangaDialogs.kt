@@ -23,6 +23,7 @@ import tachiyomi.presentation.core.components.WheelTextPicker
 fun DeleteChaptersDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
+    includeLocalChapter: Boolean,
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -45,7 +46,15 @@ fun DeleteChaptersDialog(
             Text(text = stringResource(R.string.are_you_sure))
         },
         text = {
-            Text(text = stringResource(R.string.confirm_delete_chapters))
+            Text(
+                text = stringResource(
+                    if (includeLocalChapter) {
+                        R.string.confirm_delete_user_chapters
+                    } else {
+                        R.string.confirm_delete_chapters
+                    },
+                ),
+            )
         },
     )
 }

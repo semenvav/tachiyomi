@@ -24,6 +24,7 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.File
 
 /**
  * This class is used to manage chapter downloads in the application. It must be instantiated once
@@ -350,6 +351,34 @@ class DownloadManager(
             cache.addChapter(newName, mangaDir, manga)
         } else {
             logcat(LogPriority.ERROR) { "Could not rename downloaded chapter: ${oldNames.joinToString()}" }
+        }
+    }
+
+    suspend fun moveChapters(oldSource: Source, oldManga: Manga, newSource: Source, newManga: Manga, chapters: List<Chapter>) {
+        val oldMangaDir = provider.getMangaDir(oldManga.title, oldSource)
+        val newMangaDir = provider.getMangaDir(newManga.title, newSource)
+
+        if (oldMangaDir.exists() && oldMangaDir.isDirectory &&
+            newMangaDir.exists() && newMangaDir.isDirectory
+        ) {
+            if (chapters.isNotEmpty()) {
+                for (chapter in chapters) {
+                    val oldNames = provider.getValidChapterDirNames(chapter.name, chapter.scanlator)
+                    val oldDownload = oldNames.asSequence()
+                        .mapNotNull { oldMangaDir.findFile(it) }
+                        .firstOrNull() ?: return
+                    var name = provider.getChapterDirName(chapter.name, chapter.scanlator)
+                    if (oldDownload.isFile && oldDownload.name?.endsWith(".cbz") == true) {
+                        name += ".cbz"
+                    }
+                    val destinationFile = File(String.format("%s/%s", newMangaDir.filePath!!, name))
+                    if (oldDownload.filePath != null) {
+                        File(oldDownload.filePath!!).copyTo(destinationFile, false)
+                        cache.addChapter(name, newMangaDir, newManga)
+                    }
+                }
+                deleteChapters(chapters, oldManga, oldSource)
+            }
         }
     }
 

@@ -48,6 +48,7 @@ class SetReadStatus(
 
         if (read && downloadPreferences.removeAfterMarkedAsRead().get()) {
             chaptersToUpdate
+                .filterNot { it.localChapter }
                 .groupBy { it.mangaId }
                 .forEach { (mangaId, chapters) ->
                     deleteDownload.awaitAll(

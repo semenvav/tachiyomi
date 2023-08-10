@@ -52,6 +52,7 @@ import eu.kanade.domain.manga.model.chaptersFiltered
 import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.manga.components.ChapterHeader
 import eu.kanade.presentation.manga.components.ExpandableMangaDescription
+import eu.kanade.presentation.manga.components.LocalChapterAction
 import eu.kanade.presentation.manga.components.MangaActionRow
 import eu.kanade.presentation.manga.components.MangaBottomActionMenu
 import eu.kanade.presentation.manga.components.MangaChapterListItem
@@ -96,6 +97,7 @@ fun MangaScreen(
     onWebViewClicked: (() -> Unit)?,
     onWebViewLongClicked: (() -> Unit)?,
     onTrackingClicked: (() -> Unit)?,
+    onLocalChapter: ((List<ChapterItem>, LocalChapterAction) -> Unit)?,
 
     // For tags menu
     onTagSearch: (String) -> Unit,
@@ -171,6 +173,7 @@ fun MangaScreen(
             onChapterSelected = onChapterSelected,
             onAllChapterSelected = onAllChapterSelected,
             onInvertSelection = onInvertSelection,
+            onLocalChapter = onLocalChapter,
         )
     } else {
         MangaScreenLargeImpl(
@@ -207,6 +210,7 @@ fun MangaScreen(
             onChapterSelected = onChapterSelected,
             onAllChapterSelected = onAllChapterSelected,
             onInvertSelection = onInvertSelection,
+            onLocalChapter = onLocalChapter,
         )
     }
 }
@@ -226,6 +230,7 @@ private fun MangaScreenSmallImpl(
     onWebViewClicked: (() -> Unit)?,
     onWebViewLongClicked: (() -> Unit)?,
     onTrackingClicked: (() -> Unit)?,
+    onLocalChapter: ((List<ChapterItem>, LocalChapterAction) -> Unit)?,
 
     // For tags menu
     onTagSearch: (String) -> Unit,
@@ -435,6 +440,7 @@ private fun MangaScreenSmallImpl(
                         onDownloadChapter = onDownloadChapter,
                         onChapterSelected = onChapterSelected,
                         onChapterSwipe = onChapterSwipe,
+                        onLocalChapter = onLocalChapter,
                     )
                 }
             }
@@ -457,6 +463,7 @@ fun MangaScreenLargeImpl(
     onWebViewClicked: (() -> Unit)?,
     onWebViewLongClicked: (() -> Unit)?,
     onTrackingClicked: (() -> Unit)?,
+    onLocalChapter: ((List<ChapterItem>, LocalChapterAction) -> Unit)?,
 
     // For tags menu
     onTagSearch: (String) -> Unit,
@@ -658,6 +665,7 @@ fun MangaScreenLargeImpl(
                                 onDownloadChapter = onDownloadChapter,
                                 onChapterSelected = onChapterSelected,
                                 onChapterSwipe = onChapterSwipe,
+                                onLocalChapter = onLocalChapter,
                             )
                         }
                     }
@@ -719,6 +727,7 @@ private fun LazyListScope.sharedChapterItems(
     onDownloadChapter: ((List<ChapterItem>, ChapterDownloadAction) -> Unit)?,
     onChapterSelected: (ChapterItem, Boolean, Boolean, Boolean) -> Unit,
     onChapterSwipe: (ChapterItem, LibraryPreferences.ChapterSwipeAction) -> Unit,
+    onLocalChapter: ((List<ChapterItem>, LocalChapterAction) -> Unit)?,
 ) {
     items(
         items = chapters,
@@ -729,6 +738,7 @@ private fun LazyListScope.sharedChapterItems(
         val context = LocalContext.current
 
         MangaChapterListItem(
+            localChapter = chapterItem.chapter.localChapter,
             title = if (manga.displayMode == Manga.CHAPTER_DISPLAY_NUMBER) {
                 stringResource(
                     R.string.display_mode_chapter,
@@ -778,6 +788,11 @@ private fun LazyListScope.sharedChapterItems(
             },
             onChapterSwipe = {
                 onChapterSwipe(chapterItem, it)
+            },
+            onLocalActionClick = if (onLocalChapter != null) {
+                { onLocalChapter(listOf(chapterItem), it) }
+            } else {
+                null
             },
         )
     }

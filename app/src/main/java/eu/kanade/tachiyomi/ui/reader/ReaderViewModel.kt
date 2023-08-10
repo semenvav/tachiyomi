@@ -468,7 +468,7 @@ class ReaderViewModel(
 
         // Determine which chapter should be deleted and enqueue
         val currentChapterPosition = chapterList.indexOf(currentChapter)
-        val chapterToDelete = chapterList.getOrNull(currentChapterPosition - removeAfterReadSlots)
+        val chapterToDelete = chapterList.filterNot { it.chapter.localChapter }.getOrNull(currentChapterPosition - removeAfterReadSlots)
 
         // If chapter is completely read, no need to download it
         chapterToDownload = null

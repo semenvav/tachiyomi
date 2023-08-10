@@ -1,0 +1,3 @@
+ALTER TABLE chapters ADD COLUMN local_chapter INTEGER AS Boolean NOT NULL DEFAULT 0;
+
+UPDATE chapters SET local_chapter = 0;

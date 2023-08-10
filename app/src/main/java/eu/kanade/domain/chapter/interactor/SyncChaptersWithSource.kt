@@ -80,7 +80,7 @@ class SyncChaptersWithSource(
         val toDelete = dbChapters.filterNot { dbChapter ->
             sourceChapters.any { sourceChapter ->
                 dbChapter.url == sourceChapter.url
-            }
+            } || dbChapter.localChapter
         }
 
         val rightNow = Date().time

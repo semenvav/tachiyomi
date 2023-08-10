@@ -21,6 +21,8 @@ interface Chapter : SChapter, Serializable {
     var source_order: Int
 
     var last_modified: Long
+
+    var localChapter: Boolean
 }
 
 fun Chapter.toDomainChapter(): DomainChapter? {
@@ -39,5 +41,6 @@ fun Chapter.toDomainChapter(): DomainChapter? {
         chapterNumber = chapter_number.toDouble(),
         scanlator = scanlator,
         lastModifiedAt = last_modified,
+        localChapter = localChapter,
     )
 }

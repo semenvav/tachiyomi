@@ -6,6 +6,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.util.fastAny
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.coroutineScope
 import eu.kanade.core.preference.asState
@@ -18,6 +19,7 @@ import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.manga.DownloadAction
 import eu.kanade.presentation.manga.components.ChapterDownloadAction
+import eu.kanade.presentation.manga.components.LocalChapterAction
 import eu.kanade.presentation.util.formattedMessage
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.download.DownloadCache
@@ -61,6 +63,7 @@ import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.model.ChapterUpdate
 import tachiyomi.domain.chapter.model.NoChaptersException
+import tachiyomi.domain.chapter.repository.ChapterRepository
 import tachiyomi.domain.chapter.service.getChapterSort
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -99,6 +102,7 @@ class MangaScreenModel(
     private val getTracks: GetTracks = Injekt.get(),
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val mangaRepository: MangaRepository = Injekt.get(),
+    private val chapterRepository: ChapterRepository = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
 ) : StateScreenModel<MangaScreenModel.State>(State.Loading) {
 
@@ -196,6 +200,7 @@ class MangaScreenModel(
                 val fetchFromSourceTasks = listOf(
                     async { if (needRefreshInfo) fetchMangaFromSource() },
                     async { if (needRefreshChapter) fetchChaptersFromSource() },
+                    async { if (needRefreshChapter) checkUserChaptersFromDeletion() },
                 )
                 fetchFromSourceTasks.awaitAll()
             }
@@ -211,12 +216,24 @@ class MangaScreenModel(
             val fetchFromSourceTasks = listOf(
                 async { fetchMangaFromSource(manualFetch) },
                 async { fetchChaptersFromSource(manualFetch) },
+                async { checkUserChaptersFromDeletion() },
             )
             fetchFromSourceTasks.awaitAll()
             updateSuccessState { it.copy(isRefreshingData = false) }
         }
     }
 
+    private suspend fun checkUserChaptersFromDeletion() {
+        val state = successState ?: return
+        val manga = state.manga
+        val toDeleteIds = state.chapters.map {
+            it.chapter
+        }.filter { chapter ->
+            chapter.localChapter &&
+                !downloadCache.isChapterDownloaded(chapter.name, chapter.scanlator, manga.title, manga.source, true)
+        }.map { it.id }
+        chapterRepository.removeChaptersWithIds(toDeleteIds)
+    }
     // Manga info - start
 
     /**
@@ -692,6 +709,24 @@ class MangaScreenModel(
         if (pointerPos != -1) markChaptersRead(prevChapters.take(pointerPos), true)
     }
 
+    fun runLocalChapterActions(
+        items: List<ChapterItem>,
+        action: LocalChapterAction,
+    ) {
+        when (action) {
+            LocalChapterAction.DELETE -> {
+                updateSuccessState { successState ->
+                    successState.copy(
+                        dialog = Dialog.DeleteChapters(
+                            chapters = items.map { it.chapter },
+                            includeUserChapter = true,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
     /**
      * Mark the selected chapter list as read/unread.
      * @param chapters the list of selected chapters.
@@ -746,6 +781,8 @@ class MangaScreenModel(
                         state.source,
                     )
                 }
+                val toDeleteUserChaptersIds = chapters.filter { it.localChapter }.map { it.id }
+                chapterRepository.removeChaptersWithIds(toDeleteUserChaptersIds)
             } catch (e: Throwable) {
                 logcat(LogPriority.ERROR, e)
             }
@@ -965,7 +1002,7 @@ class MangaScreenModel(
 
     sealed interface Dialog {
         data class ChangeCategory(val manga: Manga, val initialSelection: List<CheckboxState<Category>>) : Dialog
-        data class DeleteChapters(val chapters: List<Chapter>) : Dialog
+        data class DeleteChapters(val chapters: List<Chapter>, val includeUserChapter: Boolean) : Dialog
         data class DuplicateManga(val manga: Manga, val duplicate: Manga) : Dialog
         data class SetFetchInterval(val manga: Manga) : Dialog
         data object SettingsSheet : Dialog
@@ -978,7 +1015,7 @@ class MangaScreenModel(
     }
 
     fun showDeleteChapterDialog(chapters: List<Chapter>) {
-        updateSuccessState { it.copy(dialog = Dialog.DeleteChapters(chapters)) }
+        updateSuccessState { it.copy(dialog = Dialog.DeleteChapters(chapters, chapters.fastAny { chapter -> chapter.localChapter })) }
     }
 
     fun showSettingsDialog() {

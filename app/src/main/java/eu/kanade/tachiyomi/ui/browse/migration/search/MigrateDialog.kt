@@ -51,6 +51,7 @@ import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.chapter.interactor.GetChapterByMangaId
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.toChapterUpdate
+import tachiyomi.domain.chapter.repository.ChapterRepository
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.source.service.SourceManager
@@ -174,6 +175,7 @@ internal class MigrateDialogScreenModel(
     private val insertTrack: InsertTrack = Injekt.get(),
     private val coverCache: CoverCache = Injekt.get(),
     private val preferenceStore: PreferenceStore = Injekt.get(),
+    private val chapterRepository: ChapterRepository = Injekt.get(),
 ) : StateScreenModel<MigrateDialogScreenModel.State>(State()) {
 
     val migrateFlags: Preference<Int> by lazy {
@@ -292,6 +294,20 @@ internal class MigrateDialogScreenModel(
             if (oldSource != null) {
                 downloadManager.deleteManga(oldManga, oldSource)
             }
+        } else if (replace) {
+            val downloadedChapters = getChapterByMangaId.await(oldManga.id).filter { chapter ->
+                downloadManager.isChapterDownloaded(chapter.name, chapter.scanlator, oldManga.title, oldManga.source)
+            }
+            val newChapters = downloadedChapters.map { chapter ->
+                chapter.copy(
+                    name = "${chapter.name} (migrated)",
+                    localChapter = true,
+                    mangaId = newManga.id,
+                )
+            }
+            downloadedChapters.zip(newChapters).forEach { pair -> downloadManager.renameChapter(oldSource!!, oldManga, pair.first, pair.second) }
+            chapterRepository.addAll(newChapters)
+            downloadManager.moveChapters(oldSource!!, oldManga, newSource, newManga, newChapters)
         }
 
         if (replace) {

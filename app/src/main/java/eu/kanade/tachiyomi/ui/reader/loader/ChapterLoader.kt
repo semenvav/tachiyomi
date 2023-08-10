@@ -5,6 +5,7 @@ import com.github.junrar.exception.UnsupportedRarV5Exception
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.DownloadProvider
+import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
@@ -57,6 +58,11 @@ class ChapterLoader(
 
                 chapter.state = ReaderChapter.State.Loaded(pages)
             } catch (e: Throwable) {
+                if (e is HttpException && chapter.chapter.localChapter) {
+                    val localChapterException = Exception(context.getString(R.string.local_chapter_not_found))
+                    chapter.state = ReaderChapter.State.Error(localChapterException)
+                    throw localChapterException
+                }
                 chapter.state = ReaderChapter.State.Error(e)
                 throw e
             }

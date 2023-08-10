@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.util.fastAny
 import androidx.core.net.toUri
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -107,6 +108,7 @@ class MangaScreen(
             onBackClicked = navigator::pop,
             onChapterClicked = { openChapter(context, it) },
             onDownloadChapter = screenModel::runChapterDownloadActions.takeIf { !successState.source.isLocalOrStub() },
+            onLocalChapter = screenModel::runLocalChapterActions.takeIf { successState.chapters.fastAny { it.chapter.localChapter } },
             onAddToLibraryClicked = {
                 screenModel.toggleFavorite()
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -155,6 +157,7 @@ class MangaScreen(
                         screenModel.toggleAllSelection(false)
                         screenModel.deleteChapters(dialog.chapters)
                     },
+                    includeLocalChapter = dialog.includeUserChapter,
                 )
             }
             is MangaScreenModel.Dialog.DuplicateManga -> DuplicateMangaDialog(

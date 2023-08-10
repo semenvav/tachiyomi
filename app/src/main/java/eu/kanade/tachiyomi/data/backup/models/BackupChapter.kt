@@ -21,6 +21,7 @@ data class BackupChapter(
     @ProtoNumber(9) var chapterNumber: Float = 0F,
     @ProtoNumber(10) var sourceOrder: Long = 0,
     @ProtoNumber(11) var lastModifiedAt: Long = 0,
+    @ProtoNumber(12) var localChapter: Boolean = false,
 ) {
     fun toChapterImpl(): Chapter {
         return Chapter.create().copy(
@@ -35,11 +36,12 @@ data class BackupChapter(
             dateUpload = this@BackupChapter.dateUpload,
             sourceOrder = this@BackupChapter.sourceOrder,
             lastModifiedAt = this@BackupChapter.lastModifiedAt,
+            localChapter = this@BackupChapter.localChapter,
         )
     }
 }
 
-val backupChapterMapper = { _: Long, _: Long, url: String, name: String, scanlator: String?, read: Boolean, bookmark: Boolean, lastPageRead: Long, chapterNumber: Double, source_order: Long, dateFetch: Long, dateUpload: Long, lastModifiedAt: Long ->
+val backupChapterMapper = { _: Long, _: Long, url: String, name: String, scanlator: String?, read: Boolean, bookmark: Boolean, lastPageRead: Long, chapterNumber: Double, source_order: Long, dateFetch: Long, dateUpload: Long, lastModifiedAt: Long, localChapter: Boolean ->
     BackupChapter(
         url = url,
         name = name,
@@ -52,5 +54,6 @@ val backupChapterMapper = { _: Long, _: Long, url: String, name: String, scanlat
         dateUpload = dateUpload,
         sourceOrder = source_order,
         lastModifiedAt = lastModifiedAt,
+        localChapter = localChapter,
     )
 }

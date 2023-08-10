@@ -559,6 +559,7 @@ class BackupManager(
                     chapter.sourceOrder,
                     chapter.dateFetch,
                     chapter.dateUpload,
+                    chapter.localChapter,
                 )
             }
         }
@@ -583,6 +584,7 @@ class BackupManager(
                     dateFetch = null,
                     dateUpload = null,
                     chapterId = chapter.id,
+                    localChapter = null,
                 )
             }
         }
