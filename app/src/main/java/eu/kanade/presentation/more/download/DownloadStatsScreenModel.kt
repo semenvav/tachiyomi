@@ -1,26 +1,38 @@
 package eu.kanade.presentation.more.download
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
+import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.coroutineScope
-import eu.kanade.core.util.addOrRemove
+import eu.kanade.core.preference.asState
+import eu.kanade.presentation.more.download.components.graphic.GraphGroupByMode
+import eu.kanade.presentation.more.download.components.graphic.GraphicPoint
+import eu.kanade.presentation.more.download.data.DownloadStatManga
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.DownloadProvider
+import eu.kanade.tachiyomi.util.lang.toRelativeString
+import eu.kanade.tachiyomi.util.preference.toggle
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.runBlocking
 import tachiyomi.core.preference.PreferenceStore
 import tachiyomi.core.preference.getEnum
 import tachiyomi.core.util.lang.launchIO
 import tachiyomi.core.util.lang.launchNonCancellable
 import tachiyomi.domain.category.interactor.GetCategories
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.interactor.GetLibraryManga
+import tachiyomi.domain.manga.interactor.GetManga
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
+import tachiyomi.domain.stat.interactor.GetDownloadStatOperations
+import tachiyomi.domain.stat.model.DownloadStatOperation
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
-import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.TreeMap
 
 class DownloadStatsScreenModel(
@@ -30,87 +42,71 @@ class DownloadStatsScreenModel(
     private val downloadProvider: DownloadProvider = Injekt.get(),
     private val getCategories: GetCategories = Injekt.get(),
     private val preferenceStore: PreferenceStore = Injekt.get(),
+    private val getDownloadStatOperations: GetDownloadStatOperations = Injekt.get(),
+    private val getManga: GetManga = Injekt.get(),
 ) : StateScreenModel<DownloadStatsScreenState>(DownloadStatsScreenState()) {
 
-    private val downloadCache: DownloadCache by injectLazy()
+    var activeCategoryIndex: Int by preferenceStore.getInt("downloadStatSelectedTab", 0).asState(coroutineScope)
 
-    private val selectedPositions: Array<Int> = arrayOf(-1, -1)
-    private val selectedMangaIds: HashSet<Long> = HashSet()
+    private lateinit var lastSelectedManga: LibraryManga
 
     init {
         coroutineScope.launchIO {
             val sortMode = preferenceStore.getEnum("sort_mode", SortingMode.BY_ALPHABET).get()
-            mutableState.update {
+            mutableState.update { state ->
                 val categories = getCategories.await().associateBy { group -> group.id }
-                it.copy(
+                val operations = getDownloadStatOperations.await()
+                state.copy(
                     items = getLibraryManga.await().filter { libraryManga ->
-                        downloadCache.getDownloadCount(libraryManga.manga) > 0
-                    }.map { libraryManga ->
-                        val source = sourceManager.get(libraryManga.manga.source)!!
-                        DownloadStatManga(
-                            libraryManga = libraryManga,
-                            selected = libraryManga.id in selectedMangaIds,
-                            source = source,
-                            folderSize = getFolderSize(
-                                downloadProvider.findMangaDir(
-                                    libraryManga.manga.title,
-                                    source,
-                                )?.filePath!!,
-                            ),
-                            downloadChaptersCount = downloadCache.getDownloadCount(libraryManga.manga),
-                            category = categories[libraryManga.category]!!,
-                        )
+                        (downloadManager.getDownloadCount(libraryManga.manga) > 0) || operations.any { it.mangaId == libraryManga.id }
+                    }.mapNotNull { libraryManga ->
+                        val source = sourceManager.getOrStub(libraryManga.manga.source)
+                        val path = downloadProvider.findMangaDir(
+                            libraryManga.manga.title,
+                            source,
+                        )?.filePath
+                        val downloadChaptersCount = downloadManager.getDownloadCount(libraryManga.manga)
+                        if (downloadChaptersCount == 0) {
+                            DownloadStatManga(
+                                libraryManga = libraryManga,
+                                source = source,
+                                category = categories[libraryManga.category]!!,
+                            )
+                        } else if (path != null) {
+                            DownloadStatManga(
+                                libraryManga = libraryManga,
+                                source = source,
+                                folderSize = downloadProvider.getFolderSize(path),
+                                downloadChaptersCount = downloadChaptersCount,
+                                category = categories[libraryManga.category]!!,
+                            )
+                        } else {
+                            null
+                        }
                     },
                     groupByMode = preferenceStore.getEnum("group_by_mode", GroupByMode.NONE).get(),
                     sortMode = sortMode,
                     descendingOrder = preferenceStore.getBoolean("descending_order", false).get(),
                     searchQuery = preferenceStore.getString("search_query", "").get().takeIf { string -> string != "" },
+                    downloadStatOperations = operations,
+                    showNotDownloaded = preferenceStore.getBoolean("show_no_downloaded", false).get(),
                     isLoading = false,
                 )
             }
-            runSortAction(sortMode)
+            runSort(sortMode, true)
         }
     }
 
-    private fun getFolderSize(path: String): Long {
-        val file = File(path)
-        var size: Long = 0
-
-        if (file.exists()) {
-            if (file.isDirectory) {
-                val files = file.listFiles()
-                if (files != null) {
-                    for (childFile in files) {
-                        size += if (childFile.isDirectory) {
-                            getFolderSize(childFile.path)
-                        } else {
-                            getFileSize(childFile)
-                        }
-                    }
-                }
-            } else {
-                size = getFileSize(file)
-            }
-        }
-
-        return size
-    }
-
-    private fun getFileSize(file: File): Long {
-        return if (file.isDirectory) {
-            getFolderSize(file.path)
-        } else if (file.isFile) {
-            file.length()
-        } else {
-            0
-        }
-    }
-
-    fun runSortAction(mode: SortingMode) {
+    fun runSort(
+        mode: SortingMode,
+        initSort: Boolean = false,
+    ) {
         when (mode) {
-            SortingMode.BY_ALPHABET -> sortByAlphabet()
-            SortingMode.BY_SIZE -> sortBySize()
+            SortingMode.BY_ALPHABET -> sortByAlphabet(initSort)
+            SortingMode.BY_SIZE -> sortBySize(initSort)
+            SortingMode.BY_CHAPTERS -> sortByChapters(initSort)
         }
+        preferenceStore.getEnum("sort_mode", SortingMode.BY_ALPHABET).set(mode)
     }
 
     fun runGroupBy(mode: GroupByMode) {
@@ -119,11 +115,21 @@ class DownloadStatsScreenModel(
             GroupByMode.BY_CATEGORY -> groupByCategory()
             GroupByMode.BY_SOURCE -> groupBySource()
         }
+        preferenceStore.getEnum("group_by_mode", GroupByMode.NONE).set(mode)
     }
 
-    private fun sortByAlphabet() {
+    fun toggleShowNoDownload() {
+        val showNotDownloaded = preferenceStore.getBoolean("show_no_downloaded").toggle()
         mutableState.update { state ->
-            val descendingOrder = if (state.sortMode == SortingMode.BY_ALPHABET) !state.descendingOrder else false
+            state.copy(
+                showNotDownloaded = showNotDownloaded,
+            )
+        }
+    }
+
+    private fun sortByAlphabet(initSort: Boolean) {
+        mutableState.update { state ->
+            val descendingOrder = if (initSort) state.descendingOrder else if (state.sortMode == SortingMode.BY_ALPHABET) !state.descendingOrder else false
             preferenceStore.getBoolean("descending_order", false).set(descendingOrder)
             state.copy(
                 items = if (descendingOrder) state.items.sortedByDescending { it.libraryManga.manga.title } else state.items.sortedBy { it.libraryManga.manga.title },
@@ -131,13 +137,43 @@ class DownloadStatsScreenModel(
                 sortMode = SortingMode.BY_ALPHABET,
             )
         }
-        preferenceStore.getEnum("sort_mode", SortingMode.BY_ALPHABET).set(SortingMode.BY_ALPHABET)
     }
 
-    @Composable
-    fun categoryMap(items: List<DownloadStatManga>, groupMode: GroupByMode, sortMode: SortingMode, descendingOrder: Boolean): Map<String, List<DownloadStatManga>> {
+    private fun sortBySize(initSort: Boolean) {
+        mutableState.update { state ->
+            val descendingOrder = if (initSort) state.descendingOrder else if (state.sortMode == SortingMode.BY_SIZE) !state.descendingOrder else false
+            preferenceStore.getBoolean("descending_order", false).set(descendingOrder)
+            state.copy(
+                items = if (descendingOrder) state.items.sortedByDescending { it.folderSize } else state.items.sortedBy { it.folderSize },
+                descendingOrder = descendingOrder,
+                sortMode = SortingMode.BY_SIZE,
+            )
+        }
+    }
+
+    private fun sortByChapters(initSort: Boolean) {
+        mutableState.update { state ->
+            val descendingOrder = if (initSort) state.descendingOrder else if (state.sortMode == SortingMode.BY_CHAPTERS) !state.descendingOrder else false
+            preferenceStore.getBoolean("descending_order", false).set(descendingOrder)
+            state.copy(
+                items = if (descendingOrder) state.items.sortedByDescending { it.downloadChaptersCount } else state.items.sortedBy { it.downloadChaptersCount },
+                descendingOrder = descendingOrder,
+                sortMode = SortingMode.BY_CHAPTERS,
+            )
+        }
+    }
+
+    fun categoryMap(
+        items: List<DownloadStatManga>,
+        groupMode: GroupByMode,
+        sortMode: SortingMode,
+        descendingOrder: Boolean,
+        defaultCategoryName: String?,
+    ): Map<String, List<DownloadStatManga>> {
         val unsortedMap = when (groupMode) {
-            GroupByMode.BY_CATEGORY -> items.groupBy { if (it.category.isSystemCategory) { stringResource(R.string.label_default) } else { it.category.name } }
+            GroupByMode.BY_CATEGORY -> items.groupBy {
+                if (it.category.isSystemCategory && defaultCategoryName != null) { defaultCategoryName } else { it.category.name }
+            }
             GroupByMode.BY_SOURCE -> items.groupBy { it.source.name }
             GroupByMode.NONE -> emptyMap()
         }
@@ -153,20 +189,13 @@ class DownloadStatsScreenModel(
                 sortedMap.putAll(unsortedMap)
                 sortedMap
             }
+            SortingMode.BY_CHAPTERS -> {
+                val compareFun: (String) -> Comparable<*> = { it: String -> unsortedMap[it]?.sumOf { manga -> manga.downloadChaptersCount } ?: 0 }
+                val sortedMap = TreeMap<String, List<DownloadStatManga>>(if (descendingOrder) { compareByDescending { compareFun(it) } } else { compareBy { compareFun(it) } })
+                sortedMap.putAll(unsortedMap)
+                sortedMap
+            }
         }
-    }
-
-    private fun sortBySize() {
-        mutableState.update { state ->
-            val descendingOrder = if (state.sortMode == SortingMode.BY_SIZE) !state.descendingOrder else false
-            preferenceStore.getBoolean("descending_order", false).set(descendingOrder)
-            state.copy(
-                items = if (descendingOrder) state.items.sortedByDescending { it.folderSize } else state.items.sortedBy { it.folderSize },
-                descendingOrder = descendingOrder,
-                sortMode = SortingMode.BY_SIZE,
-            )
-        }
-        preferenceStore.getEnum("sort_mode", SortingMode.BY_SIZE).set(SortingMode.BY_SIZE)
     }
 
     private fun groupBySource() {
@@ -175,7 +204,6 @@ class DownloadStatsScreenModel(
                 groupByMode = GroupByMode.BY_SOURCE,
             )
         }
-        preferenceStore.getEnum("group_by_mode", GroupByMode.NONE).set(GroupByMode.BY_SOURCE)
     }
 
     private fun groupByCategory() {
@@ -184,7 +212,6 @@ class DownloadStatsScreenModel(
                 groupByMode = GroupByMode.BY_CATEGORY,
             )
         }
-        preferenceStore.getEnum("group_by_mode", GroupByMode.NONE).set(GroupByMode.BY_CATEGORY)
     }
 
     private fun unGroup() {
@@ -193,67 +220,66 @@ class DownloadStatsScreenModel(
                 groupByMode = GroupByMode.NONE,
             )
         }
-        preferenceStore.getEnum("group_by_mode", GroupByMode.NONE).set(GroupByMode.NONE)
     }
 
     fun toggleSelection(
         item: DownloadStatManga,
-        selected: Boolean,
-        userSelected: Boolean = false,
-        fromLongPress: Boolean = false,
     ) {
+        lastSelectedManga = item.libraryManga
         mutableState.update { state ->
-            val newItems = state.items.toMutableList().apply {
-                val selectedIndex = indexOfFirst { it.libraryManga.manga.id == item.libraryManga.manga.id }
-                if (selectedIndex < 0) return@apply
-
-                val selectedItem = get(selectedIndex)
-                if (selectedItem.selected == selected) return@apply
-
-                val firstSelection = none { it.selected }
-                set(selectedIndex, selectedItem.copy(selected = selected))
-                selectedMangaIds.addOrRemove(item.libraryManga.manga.id, selected)
-
-                if (selected && userSelected && fromLongPress) {
-                    if (firstSelection) {
-                        selectedPositions[0] = selectedIndex
-                        selectedPositions[1] = selectedIndex
+            state.copy(
+                items = state.items.map {
+                    if (it.libraryManga.id == item.libraryManga.id) {
+                        it.copy(selected = !it.selected)
                     } else {
-                        // Try to select the items in-between when possible
-                        val range: IntRange
-                        if (selectedIndex < selectedPositions[0]) {
-                            range = selectedIndex + 1 until selectedPositions[0]
-                            selectedPositions[0] = selectedIndex
-                        } else if (selectedIndex > selectedPositions[1]) {
-                            range = (selectedPositions[1] + 1) until selectedIndex
-                            selectedPositions[1] = selectedIndex
-                        } else {
-                            // Just select itself
-                            range = IntRange.EMPTY
-                        }
+                        it
+                    }
+                },
+            )
+        }
+    }
 
-                        range.forEach {
-                            val inbetweenItem = get(it)
-                            if (!inbetweenItem.selected) {
-                                selectedMangaIds.add(inbetweenItem.libraryManga.manga.id)
-                                set(it, inbetweenItem.copy(selected = true))
-                            }
-                        }
-                    }
-                } else if (userSelected && !fromLongPress) {
-                    if (!selected) {
-                        if (selectedIndex == selectedPositions[0]) {
-                            selectedPositions[0] = indexOfFirst { it.selected }
-                        } else if (selectedIndex == selectedPositions[1]) {
-                            selectedPositions[1] = indexOfLast { it.selected }
-                        }
-                    } else {
-                        if (selectedIndex < selectedPositions[0]) {
-                            selectedPositions[0] = selectedIndex
-                        } else if (selectedIndex > selectedPositions[1]) {
-                            selectedPositions[1] = selectedIndex
-                        }
-                    }
+    fun toggleMassSelection(item: DownloadStatManga) {
+        mutableState.update { state ->
+            val processedItems = if (state.groupByMode == GroupByMode.NONE) {
+                state.processedItems(false)
+            } else {
+                val temp = mutableListOf<DownloadStatManga>()
+                categoryMap(
+                    items = state.processedItems(false),
+                    groupMode = state.groupByMode,
+                    sortMode = state.sortMode,
+                    descendingOrder = state.descendingOrder,
+                    defaultCategoryName = null,
+                ).map {
+                    temp.addAll(it.value)
+                }
+                temp
+            }
+            val lastSelectedIndex =
+                processedItems.indexOfFirst { it.libraryManga.id == lastSelectedManga.id && it.libraryManga.category == lastSelectedManga.category }
+            val selectedIndex =
+                processedItems.indexOfFirst { it.libraryManga.id == item.libraryManga.id && it.libraryManga.category == item.libraryManga.category }
+            val itemsToChange = mutableSetOf(processedItems[lastSelectedIndex].libraryManga.id)
+            val range = if (selectedIndex < lastSelectedIndex) {
+                selectedIndex until lastSelectedIndex
+            } else if (selectedIndex > lastSelectedIndex) {
+                (lastSelectedIndex + 1) until (selectedIndex + 1)
+            } else {
+                IntRange.EMPTY
+            }
+            range.forEach {
+                val betweenItem = processedItems[it]
+                if (!betweenItem.selected) {
+                    lastSelectedManga = betweenItem.libraryManga
+                    itemsToChange.add(betweenItem.libraryManga.id)
+                }
+            }
+            val newItems = state.items.map {
+                if (it.libraryManga.id in itemsToChange) {
+                    it.copy(selected = true)
+                } else {
+                    it
                 }
             }
             state.copy(items = newItems)
@@ -262,15 +288,45 @@ class DownloadStatsScreenModel(
 
     fun toggleAllSelection(selected: Boolean) {
         mutableState.update { state ->
+            val newSelected = state.processedItems(false).map { manga -> manga.libraryManga.id }.toHashSet()
             val newItems = state.items.map {
-                selectedMangaIds.addOrRemove(it.libraryManga.manga.id, selected)
-                it.copy(selected = selected)
+                if (it.libraryManga.id in newSelected) {
+                    it.copy(selected = selected)
+                } else {
+                    it
+                }
             }
             state.copy(items = newItems)
         }
+    }
 
-        selectedPositions[0] = -1
-        selectedPositions[1] = -1
+    fun invertSelection() {
+        mutableState.update { state ->
+            val newSelected = state.processedItems(false).map { manga -> manga.libraryManga.id }.toHashSet()
+            val newItems = state.items.map {
+                if (it.libraryManga.id in newSelected) {
+                    it.copy(selected = !it.selected)
+                } else {
+                    it
+                }
+            }
+            state.copy(items = newItems)
+        }
+    }
+
+    fun groupSelection(items: List<DownloadStatManga>) {
+        val newSelected = items.map { manga -> manga.libraryManga.manga.id }.toHashSet()
+        lastSelectedManga = items.last().libraryManga
+        mutableState.update { state ->
+            val newItems = state.items.map {
+                if (it.libraryManga.manga.id in newSelected) {
+                    it.copy(selected = !it.selected)
+                } else {
+                    it
+                }
+            }
+            state.copy(items = newItems)
+        }
     }
 
     fun search(query: String?) {
@@ -281,46 +337,143 @@ class DownloadStatsScreenModel(
             preferenceStore.getString("search_query", "").delete()
         }
     }
+    fun findManga(id: Long?): Manga? {
+        return runBlocking { if (id != null) getManga.await(id) else null }
+    }
 
-    fun deleteMangas(libraryMangas: List<DownloadStatManga>) {
+    fun deleteMangas(manga: List<DownloadStatManga>) {
         coroutineScope.launchNonCancellable {
-            libraryMangas.forEach { manga ->
-                val source = sourceManager.get(manga.libraryManga.manga.source) ?: return@forEach
-                downloadManager.deleteManga(manga.libraryManga.manga, source)
+            manga.forEach { manga ->
+                downloadManager.deleteManga(manga.libraryManga.manga, manga.source)
             }
         }
-        val set = libraryMangas.map { it.libraryManga.id }.toHashSet()
+        val toDeleteIds = manga.map { it.libraryManga.manga.id }.toHashSet()
         toggleAllSelection(false)
         mutableState.update { state ->
             state.copy(
-                items = state.items.filterNot { it.libraryManga.id in set },
+                items = state.items.map { if (it.libraryManga.manga.id in toDeleteIds) it.copy(downloadChaptersCount = 0, folderSize = 0) else it },
             )
         }
     }
 
-    fun invertSelection() {
-        mutableState.update { state ->
-            val newItems = state.items.map {
-                selectedMangaIds.addOrRemove(it.libraryManga.manga.id, !it.selected)
-                it.copy(selected = !it.selected)
-            }
-            state.copy(items = newItems)
-        }
-        selectedPositions[0] = -1
-        selectedPositions[1] = -1
+    fun showDeleteAlert(items: List<DownloadStatManga>) {
+        mutableState.update { it.copy(dialog = Dialog.DeleteManga(items)) }
     }
 
-    fun groupSelection(items: List<DownloadStatManga>) {
-        val newSelected = items.map { manga -> manga.libraryManga.id }.toHashSet()
-        selectedMangaIds.addAll(newSelected)
-        mutableState.update { state ->
-            val newItems = state.items.map {
-                it.copy(selected = if (it.libraryManga.id in newSelected) !it.selected else it.selected)
-            }
-            state.copy(items = newItems)
+    fun dismissDialog() {
+        mutableState.update { it.copy(dialog = null) }
+    }
+
+    fun openSettingsDialog() {
+        mutableState.update { it.copy(dialog = Dialog.SettingsSheet) }
+    }
+
+    fun setDialog(dialog: Dialog?) {
+        mutableState.update { it.copy(dialog = dialog) }
+    }
+
+    fun formGraphData(
+        downloadStatOperations: List<DownloadStatOperation>,
+        currentWeight: Long,
+        graphGroupByMode: GraphGroupByMode,
+        context: Context,
+    ): List<GraphicPoint> {
+        var weight = currentWeight.toFloat()
+        val pointsList = mutableListOf<GraphicPoint>()
+        for (i in downloadStatOperations.indices.reversed()) {
+            weight -= downloadStatOperations[i].size
         }
-        selectedPositions[0] = -1
-        selectedPositions[1] = -1
+        pointsList.add(
+            GraphicPoint(
+                coordinate = weight,
+                subLine = context.getString(R.string.graph_start_point_subLine),
+                dialog = Dialog.DownloadStatOperationStart,
+            ),
+        )
+        when (graphGroupByMode) {
+            GraphGroupByMode.NONE -> {
+                for (i in downloadStatOperations) {
+                    weight += i.size
+                    pointsList.add(
+                        GraphicPoint(
+                            coordinate = weight,
+                            subLine = Date(i.date).toRelativeString(
+                                context = context,
+                                range = 0,
+                            ),
+                            dialog = Dialog.DownloadStatOperationInfo(i),
+                        ),
+                    )
+                }
+            }
+            GraphGroupByMode.BY_DAY -> {
+                val dateMap = mutableMapOf<String, MutableList<DownloadStatOperation>>()
+                for (i in downloadStatOperations) {
+                    weight += i.size
+                    val key = Date(i.date).toRelativeString(
+                        context = context,
+                        range = 0,
+                    )
+                    if (dateMap.containsKey(key)) {
+                        dateMap[key]?.add(i)
+                    } else {
+                        dateMap[key] = mutableListOf(i)
+                    }
+                }
+                for (i in dateMap) {
+                    weight += i.value.sumOf { it.size }
+                    pointsList.add(
+                        GraphicPoint(
+                            coordinate = weight,
+                            subLine = i.key,
+                            dialog = Dialog.MultiMangaDownloadStatOperationInfo(
+                                i.value,
+                            ),
+                        ),
+                    )
+                }
+            }
+            GraphGroupByMode.BY_MONTH -> {
+                val dateMap = mutableMapOf<String, MutableList<DownloadStatOperation>>()
+                val dateFormat = SimpleDateFormat("MM.yyyy", Locale.US)
+                for (i in downloadStatOperations) {
+                    weight += i.size
+                    val key = dateFormat.format(Date(i.date))
+                    if (dateMap.containsKey(key)) {
+                        dateMap[key]?.add(i)
+                    } else {
+                        dateMap[key] = mutableListOf(i)
+                    }
+                }
+                for (i in dateMap) {
+                    weight += i.value.sumOf { it.size }
+                    pointsList.add(
+                        GraphicPoint(
+                            coordinate = weight,
+                            subLine = i.key,
+                            dialog = Dialog.MultiMangaDownloadStatOperationInfo(
+                                i.value,
+                            ),
+                        ),
+                    )
+                }
+            }
+        }
+        return pointsList
+    }
+
+    fun toggleExpanded(manga: DownloadStatManga) {
+        mutableState.update { state ->
+            state.copy(
+                items = state.items.map {
+                    if (it.libraryManga.id == manga.libraryManga.id && it.libraryManga.category == manga.libraryManga.category) {
+                        it.copy(expanded = !it.expanded)
+                    } else {
+                        it
+                    }
+                },
+            )
+        }
     }
 }
 
@@ -333,4 +486,13 @@ enum class GroupByMode {
 enum class SortingMode {
     BY_ALPHABET,
     BY_SIZE,
+    BY_CHAPTERS,
+}
+
+sealed class Dialog {
+    data class DeleteManga(val items: List<DownloadStatManga>) : Dialog()
+    data class DownloadStatOperationInfo(val downloadStatOperation: DownloadStatOperation) : Dialog()
+    data class MultiMangaDownloadStatOperationInfo(val downloadStatOperation: List<DownloadStatOperation>) : Dialog()
+    object DownloadStatOperationStart : Dialog()
+    object SettingsSheet : Dialog()
 }

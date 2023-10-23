@@ -100,5 +100,6 @@ data class TabContent(
     val badgeNumber: Int? = null,
     val searchEnabled: Boolean = false,
     val actions: List<AppBar.Action> = emptyList(),
+    val actionModeActions: List<AppBar.Action> = emptyList(),
     val content: @Composable (contentPadding: PaddingValues, snackbarHostState: SnackbarHostState) -> Unit,
 )

@@ -16,6 +16,7 @@ import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.manga.model.Manga
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.File
 
 /**
  * This class is used to provide the directories where the downloads should be saved.
@@ -186,6 +187,40 @@ class DownloadProvider(
                 // Legacy chapter directory name used in v0.9.2 and before
                 add(DiskUtil.buildValidFilename(chapterName))
             }
+        }
+    }
+
+    fun getFolderSize(path: String): Long {
+        val file = File(path)
+        var size: Long = 0
+
+        if (file.exists()) {
+            if (file.isDirectory) {
+                val files = file.listFiles()
+                if (files != null) {
+                    for (childFile in files) {
+                        size += if (childFile.isDirectory) {
+                            getFolderSize(childFile.path)
+                        } else {
+                            getFileSize(childFile)
+                        }
+                    }
+                }
+            } else {
+                size = getFileSize(file)
+            }
+        }
+
+        return size
+    }
+
+    private fun getFileSize(file: File): Long {
+        return if (file.isDirectory) {
+            getFolderSize(file.path)
+        } else if (file.isFile) {
+            file.length()
+        } else {
+            0
         }
     }
 }

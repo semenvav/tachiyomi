@@ -58,7 +58,6 @@
     <!-- reserved for #4048 -->
     <string name="action_filter_empty">Remove filter</string>
     <string name="action_sort_alpha">Alphabetically</string>
-    <string name="action_sort_A_Z">A-Z</string>
     <string name="action_sort_count">Total entries</string>
     <string name="action_sort_total">Total chapters</string>
     <string name="action_sort_last_read">Last read</string>
@@ -112,7 +111,9 @@
     <string name="action_copy_to_clipboard">Copy to clipboard</string>
     <string name="action_group_by_category">Category</string>
     <string name="action_group_by_source">Source</string>
-    <string name="action_ungroup">ungroup</string>
+    <string name="action_ungroup">Ungroup</string>
+    <string name="action_group_by_day">Day</string>
+    <string name="action_group_by_month">Month</string>
     <!-- Do not translate "WebView" -->
     <string name="action_open_in_web_view">Open in WebView</string>
     <string name="action_web_view" translatable="false">WebView</string>
@@ -164,6 +165,23 @@
     <string name="action_start_downloading_now">Start downloading now</string>
     <string name="action_faq_and_guides">FAQ and Guides</string>
     <string name="action_not_now">Not now</string>
+
+    <!-- downloads` stat`s screen -->
+    <string name="label_download_enties_tab">Entries</string>
+    <string name="label_download_stats_overall_tab">Overall</string>
+    <string name="deleted_chapters">Deleted chapters</string>
+    <string name="no_stat_data">No stat data</string>
+    <string name="no_enough_stat_data">Not enough stat data to form graph</string>
+    <string name="group_info">downloaded %d chapters in %d entries</string>
+    <string name="download_stat_operation_deleted">Deleted %d chapter with weight %s</string>
+    <string name="download_stat_operation_downloaded">Downloaded %d chapter with weight %s</string>
+    <string name="entry_was_deleted">Entry was deleted from the library</string>
+    <string name="graph_start_point_subLine">earlier</string>
+    <string name="show_entries_without_downloaded">Show entries with no currently downloaded chapters</string>
+    <string name="scroll_to_start">Scroll to start</string>
+    <string name="scroll_to_end">Scroll to end</string>
+    <string name="disable_stat_graph_grouping">Disable group mode</string>
+    <string name="start_operation_massage">Start of recording, no information previously available</string>
 
     <!-- Memory units -->
     <string name="memory_unit_b">B</string>
@@ -707,6 +725,7 @@
     <string name="error_saving_cover">Error saving cover</string>
     <string name="error_sharing_cover">Error sharing cover</string>
     <string name="confirm_delete_chapters">Are you sure you want to delete the selected chapters?</string>
+    <string name="confirm_delete_entries">Are you sure you want to delete the selected entries?</string>
     <string name="chapter_settings">Chapter settings</string>
     <string name="confirm_set_chapter_settings">Are you sure you want to save these settings as default?</string>
     <string name="also_set_chapter_settings_for_library">Also apply to all entries in my library</string>
