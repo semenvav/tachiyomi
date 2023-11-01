@@ -1,6 +1,7 @@
 package eu.kanade.presentation.more.download.tabs
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -16,7 +17,6 @@ import eu.kanade.presentation.more.download.components.DownloadStatsRow
 import eu.kanade.presentation.more.download.components.graphic.PieChartWithLegend
 import eu.kanade.presentation.more.download.components.graphic.PointGraph
 import eu.kanade.tachiyomi.R
-import tachiyomi.presentation.core.components.LazyColumn
 import tachiyomi.presentation.core.components.material.padding
 
 @Composable
@@ -27,10 +27,10 @@ fun overAllStatsTab(
     return TabContent(
         titleRes = R.string.label_download_stats_overall_tab,
         searchEnabled = false,
-        content = { PaddingValues, _ ->
+        content = { paddingValues, _ ->
             LazyColumn(
                 state = rememberLazyListState(),
-                contentPadding = PaddingValues,
+                contentPadding = paddingValues,
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
             ) {
                 item {
@@ -56,7 +56,7 @@ fun overAllStatsTab(
                                 defaultCategoryName = defaultCategoryName,
                             )
                         },
-                        contentPadding = PaddingValues,
+                        contentPadding = paddingValues,
                     )
                 }
                 item {

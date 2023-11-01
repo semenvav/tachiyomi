@@ -183,13 +183,6 @@
     <string name="disable_stat_graph_grouping">Disable group mode</string>
     <string name="start_operation_massage">Start of recording, no information previously available</string>
 
-    <!-- Memory units -->
-    <string name="memory_unit_b">B</string>
-    <string name="memory_unit_kb">KB</string>
-    <string name="memory_unit_mb">MB</string>
-    <string name="memory_unit_gb">GB</string>
-
-
     <!-- Operations -->
     <string name="loading">Loading…</string>
     <string name="internal_error">InternalError: Check crash logs for further information</string>

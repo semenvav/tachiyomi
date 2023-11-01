@@ -13,11 +13,12 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.util.lang.toRelativeString
-import eu.kanade.tachiyomi.util.preference.toggle
+import eu.kanade.tachiyomi.util.storage.DiskUtil
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import tachiyomi.core.preference.PreferenceStore
 import tachiyomi.core.preference.getEnum
+import tachiyomi.core.preference.toggle
 import tachiyomi.core.util.lang.launchIO
 import tachiyomi.core.util.lang.launchNonCancellable
 import tachiyomi.domain.category.interactor.GetCategories
@@ -30,6 +31,7 @@ import tachiyomi.domain.stat.interactor.GetDownloadStatOperations
 import tachiyomi.domain.stat.model.DownloadStatOperation
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -76,7 +78,7 @@ class DownloadStatsScreenModel(
                             DownloadStatManga(
                                 libraryManga = libraryManga,
                                 source = source,
-                                folderSize = downloadProvider.getFolderSize(path),
+                                folderSize = DiskUtil.getDirectorySize(File(path)),
                                 downloadChaptersCount = downloadChaptersCount,
                                 category = categories[libraryManga.category]!!,
                             )
@@ -399,7 +401,7 @@ class DownloadStatsScreenModel(
                             coordinate = weight,
                             subLine = Date(i.date).toRelativeString(
                                 context = context,
-                                range = 0,
+                                relative = false,
                             ),
                             dialog = Dialog.DownloadStatOperationInfo(i),
                         ),
@@ -412,7 +414,7 @@ class DownloadStatsScreenModel(
                     weight += i.size
                     val key = Date(i.date).toRelativeString(
                         context = context,
-                        range = 0,
+                        relative = false,
                     )
                     if (dateMap.containsKey(key)) {
                         dateMap[key]?.add(i)

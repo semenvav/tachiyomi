@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -31,7 +32,6 @@ import eu.kanade.tachiyomi.R
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.stat.model.DownloadStatOperation
 import tachiyomi.presentation.core.components.CheckboxItem
-import tachiyomi.presentation.core.components.LazyColumn
 import tachiyomi.presentation.core.components.RadioItem
 import tachiyomi.presentation.core.components.SortItem
 import tachiyomi.presentation.core.components.material.TextButton
@@ -181,7 +181,7 @@ private fun MangaInfoColumn(
                         stringResource(R.string.download_stat_operation_downloaded),
                         downloadItems.sumOf { it.units },
                         folderSizeText(
-                            folderSizeBytes = downloadItems.sumOf { it.size },
+                            folderSize = downloadItems.sumOf { it.size },
                         ),
                     ),
                     maxLines = 2,
@@ -201,7 +201,7 @@ private fun MangaInfoColumn(
                         stringResource(R.string.download_stat_operation_deleted),
                         deleteItems.sumOf { it.units },
                         folderSizeText(
-                            folderSizeBytes = abs(deleteItems.sumOf { it.size }),
+                            folderSize = abs(deleteItems.sumOf { it.size }),
                         ),
                     ),
                     maxLines = 2,

@@ -407,7 +407,7 @@ class Downloader(
             addDownloadStatOperation.await(
                 DownloadStatOperation.create().copy(
                     mangaId = download.manga.id,
-                    size = provider.getFolderSize(provider.findChapterDir(download.chapter.name, download.chapter.scanlator, download.manga.title, download.source)?.filePath!!),
+                    size = DiskUtil.getDirectorySize(File(provider.findChapterDir(download.chapter.name, download.chapter.scanlator, download.manga.title, download.source)?.filePath!!)),
                 ),
             )
 

@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.util.storage.DiskUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.drop
@@ -26,6 +27,7 @@ import tachiyomi.domain.stat.interactor.AddDownloadStatOperation
 import tachiyomi.domain.stat.model.DownloadStatOperation
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.File
 
 /**
  * This class is used to manage chapter downloads in the application. It must be instantiated once
@@ -229,7 +231,7 @@ class DownloadManager(
             addDownloadStatOperation.await(
                 DownloadStatOperation.create().copy(
                     mangaId = manga.id,
-                    size = chapterDirs.sumOf { provider.getFolderSize(it.filePath!!) } * -1,
+                    size = chapterDirs.sumOf { DiskUtil.getDirectorySize(File( it.filePath!!)) } * -1,
                     units = filteredChapters.size.toLong(),
 
                 ),
@@ -257,7 +259,7 @@ class DownloadManager(
                 downloader.removeFromQueue(manga)
             }
             val mangaDir = provider.findMangaDir(manga.title, source)
-            val dirSize = provider.getFolderSize(mangaDir?.filePath!!)
+            val dirSize = DiskUtil.getDirectorySize(File( mangaDir?.filePath!!))
             if (dirSize > 0) {
                 addDownloadStatOperation.await(
                     DownloadStatOperation.create().copy(

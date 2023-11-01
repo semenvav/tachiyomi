@@ -1,5 +1,6 @@
 package eu.kanade.presentation.more.download.components
 
+import android.text.format.Formatter
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -59,8 +61,6 @@ import tachiyomi.presentation.core.components.material.TextButton
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.util.selectedBackground
 import kotlin.math.abs
-import kotlin.math.ln
-import kotlin.math.pow
 
 @Composable
 fun CategoryList(
@@ -413,12 +413,9 @@ fun DownloadedIndicator(
 }
 
 @Composable
-fun folderSizeText(folderSizeBytes: Long): String {
-    val units = arrayOf(R.string.memory_unit_b, R.string.memory_unit_kb, R.string.memory_unit_mb, R.string.memory_unit_gb)
-    val base = 1024.0
-    val exponent = (ln(folderSizeBytes.toDouble()) / ln(base)).toInt()
-    val size = folderSizeBytes / base.pow(exponent.toDouble())
-    return if (exponent > 0) { String.format("%.2f %s", size, stringResource(units[exponent])) } else "0"
+fun folderSizeText(folderSize: Long): String {
+    val context = LocalContext.current
+    return Formatter.formatFileSize(context, folderSize)
 }
 
 @Composable
