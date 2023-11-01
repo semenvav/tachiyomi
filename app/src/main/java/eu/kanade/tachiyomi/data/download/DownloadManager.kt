@@ -231,7 +231,7 @@ class DownloadManager(
             addDownloadStatOperation.await(
                 DownloadStatOperation.create().copy(
                     mangaId = manga.id,
-                    size = chapterDirs.sumOf { DiskUtil.getDirectorySize(File( it.filePath!!)) } * -1,
+                    size = chapterDirs.sumOf { DiskUtil.getDirectorySize(File(it.filePath!!)) } * -1,
                     units = filteredChapters.size.toLong(),
 
                 ),
