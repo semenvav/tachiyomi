@@ -415,8 +415,8 @@ object SettingsDataScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(R.string.label_download_stats),
-                    onClick =  { navigator.push(DownloadStatsScreen()) }
-                )
+                    onClick =  { navigator.push(DownloadStatsScreen()) },
+                ),
             ),
         )
     }
