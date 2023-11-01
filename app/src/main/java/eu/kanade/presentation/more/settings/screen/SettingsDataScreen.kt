@@ -34,6 +34,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import eu.kanade.presentation.more.download.DownloadStatsScreen
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.widget.BasePreferenceWidget
 import eu.kanade.presentation.more.settings.widget.PrefsHorizontalPadding
@@ -377,6 +380,7 @@ object SettingsDataScreen : SearchableSettings {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
         val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
+        val navigator = LocalNavigator.currentOrThrow
 
         val chapterCache = remember { Injekt.get<ChapterCache>() }
         var cacheReadableSizeSema by remember { mutableIntStateOf(0) }
@@ -409,6 +413,10 @@ object SettingsDataScreen : SearchableSettings {
                     pref = libraryPreferences.autoClearChapterCache(),
                     title = stringResource(R.string.pref_auto_clear_chapter_cache),
                 ),
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(R.string.label_download_stats),
+                    onClick =  { navigator.push(DownloadStatsScreen()) }
+                )
             ),
         )
     }
