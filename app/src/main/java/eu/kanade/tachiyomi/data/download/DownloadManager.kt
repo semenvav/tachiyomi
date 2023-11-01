@@ -259,7 +259,7 @@ class DownloadManager(
                 downloader.removeFromQueue(manga)
             }
             val mangaDir = provider.findMangaDir(manga.title, source)
-            val dirSize = DiskUtil.getDirectorySize(File( mangaDir?.filePath!!))
+            val dirSize = DiskUtil.getDirectorySize(File(mangaDir?.filePath!!))
             if (dirSize > 0) {
                 addDownloadStatOperation.await(
                     DownloadStatOperation.create().copy(
