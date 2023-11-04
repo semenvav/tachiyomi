@@ -371,7 +371,7 @@ fun MangaDownloadStatSection(
         TitleRow(
             titles = listOf(
                 stringResource(R.string.deleted_chapters),
-                items.filter { it.size < 0 }.sumOf { it.units }.toString(),
+                abs(items.filter { it.size < 0 }.sumOf { it.units }).toString(),
                 folderSizeText(items.filter { it.size < 0 }.sumOf { abs(it.size) }),
             ),
             titleStyle = MaterialTheme.typography.bodyMedium,

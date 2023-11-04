@@ -1,5 +1,6 @@
 package tachiyomi.data.stat
 
+import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.DatabaseHandler
 import tachiyomi.domain.stat.model.DownloadStatOperation
 import tachiyomi.domain.stat.repository.DownloadStatRepository
@@ -10,6 +11,10 @@ class DownloadStatRepositoryImpl(
 ) : DownloadStatRepository {
     override suspend fun getStatOperations(): List<DownloadStatOperation> {
         return handler.awaitList { download_statQueries.getStatOperations(DownloadStatActionMapper) }
+    }
+
+    override suspend fun getStatOperationsAsFlow(): Flow<List<DownloadStatOperation>> {
+        return handler.subscribeToList{ download_statQueries.getStatOperations(DownloadStatActionMapper) }
     }
 
     override suspend fun insert(operation: DownloadStatOperation) {

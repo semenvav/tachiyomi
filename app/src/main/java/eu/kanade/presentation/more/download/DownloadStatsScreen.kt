@@ -86,8 +86,8 @@ class DownloadStatsScreen : Screen() {
                     sortMode = state.sortMode,
                     groupByMode = state.groupByMode,
                     showNotDownloaded = state.showNotDownloaded,
-                    onSort = screenModel::runSort,
-                    onGroup = screenModel::runGroupBy,
+                    onSort = screenModel::changeSortMode,
+                    onGroup = screenModel::changeGroupByMode,
                     toggleShowNotDownloaded = screenModel::toggleShowNoDownload,
                 )
             }

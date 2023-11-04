@@ -65,7 +65,7 @@ fun DeletedStatsRow(
     StatsSection(R.string.deleted_chapters) {
         Row {
             StatsItem(
-                data.size.toString(),
+                abs(data.sumOf { it.units }).toString(),
                 stringResource(R.string.label_total_chapters),
             )
             StatsItem(

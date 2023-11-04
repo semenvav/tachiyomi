@@ -1,6 +1,7 @@
 package eu.kanade.presentation.more.download
 
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.util.fastAny
 import eu.kanade.presentation.more.download.data.DownloadStatManga
 import tachiyomi.domain.stat.model.DownloadStatOperation
 
@@ -31,9 +32,9 @@ data class DownloadStatsScreenState(
     }
 
     fun processedItems(unique: Boolean): List<DownloadStatManga> {
-        return (if (unique) uniqueItems() else items).filter {
-            if (!showNotDownloaded) it.downloadChaptersCount > 0 else true
-        }.filter {
+        return (if (unique) uniqueItems() else items)
+            .filter { item -> item.downloadChaptersCount > 0 || if (showNotDownloaded) downloadStatOperations.fastAny { it.mangaId == item.libraryManga.id } else false }
+            .filter {
             if (searchQuery != null) {
                 it.libraryManga.manga.title.contains(searchQuery, true) ||
                     if (groupByMode == GroupByMode.BY_SOURCE) { it.source.name.contains(searchQuery, true) } else { false } ||
@@ -42,5 +43,6 @@ data class DownloadStatsScreenState(
                 true
             }
         }
+        .sortedWith { manga1, manga2 -> getDownloadStatMangaSort(sortMode, descendingOrder).invoke(manga1, manga2) }
     }
 }

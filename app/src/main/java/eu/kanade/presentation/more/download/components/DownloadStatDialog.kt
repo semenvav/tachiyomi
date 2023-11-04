@@ -199,7 +199,7 @@ private fun MangaInfoColumn(
                 Text(
                     text = String.format(
                         stringResource(R.string.download_stat_operation_deleted),
-                        deleteItems.sumOf { it.units },
+                        abs(deleteItems.sumOf { it.units }),
                         folderSizeText(
                             folderSize = abs(deleteItems.sumOf { it.size }),
                         ),
