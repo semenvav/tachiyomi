@@ -69,7 +69,7 @@ class DownloadStatsScreenModel(
                         DownloadStatManga(
                             libraryManga = libraryManga,
                             source = source,
-                            folderSize = if(path != null) DiskUtil.getDirectorySize(File(path)) else 0,
+                            folderSize = if (path != null) DiskUtil.getDirectorySize(File(path)) else 0,
                             downloadChaptersCount = downloadManager.getDownloadCount(libraryManga.manga),
                             category = categories[libraryManga.category]!!,
                         )
@@ -89,14 +89,16 @@ class DownloadStatsScreenModel(
             getDownloadStatOperations.subscribe().distinctUntilChanged().collectLatest { operations ->
                 mutableState.update { state ->
                     val oldOperationsId = state.downloadStatOperations.map { it.id }.toHashSet()
-                    val newOperations = operations.mapNotNull { if(!oldOperationsId.contains(it.id)) it else null }.groupBy { it.mangaId }
+                    val newOperations = operations.mapNotNull { if (!oldOperationsId.contains(it.id)) it else null }.groupBy { it.mangaId }
                     val newItems = state.items.map { item ->
-                        if(newOperations.containsKey(item.libraryManga.id)){
+                        if (newOperations.containsKey(item.libraryManga.id)) {
                             item.copy(
                                 folderSize = item.folderSize + newOperations[item.libraryManga.id]!!.sumOf { it.size },
                                 downloadChaptersCount = item.downloadChaptersCount + newOperations[item.libraryManga.id]!!.sumOf { it.units }.toInt(),
                             )
-                        } else item
+                        } else {
+                            item
+                        }
                     }
                     state.copy(
                         items = newItems,

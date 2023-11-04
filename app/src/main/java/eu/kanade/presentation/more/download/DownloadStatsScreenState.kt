@@ -35,14 +35,14 @@ data class DownloadStatsScreenState(
         return (if (unique) uniqueItems() else items)
             .filter { item -> item.downloadChaptersCount > 0 || if (showNotDownloaded) downloadStatOperations.fastAny { it.mangaId == item.libraryManga.id } else false }
             .filter {
-            if (searchQuery != null) {
-                it.libraryManga.manga.title.contains(searchQuery, true) ||
+                if (searchQuery != null) {
+                    it.libraryManga.manga.title.contains(searchQuery, true) ||
                     if (groupByMode == GroupByMode.BY_SOURCE) { it.source.name.contains(searchQuery, true) } else { false } ||
                     if (groupByMode == GroupByMode.BY_CATEGORY) { it.category.name.contains(searchQuery, true) } else { false }
-            } else {
-                true
+                } else {
+                    true
+                }
             }
-        }
-        .sortedWith { manga1, manga2 -> getDownloadStatMangaSort(sortMode, descendingOrder).invoke(manga1, manga2) }
+            .sortedWith { manga1, manga2 -> getDownloadStatMangaSort(sortMode, descendingOrder).invoke(manga1, manga2) }
     }
 }
