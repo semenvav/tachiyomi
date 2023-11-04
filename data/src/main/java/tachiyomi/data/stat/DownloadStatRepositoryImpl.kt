@@ -14,7 +14,7 @@ class DownloadStatRepositoryImpl(
     }
 
     override suspend fun getStatOperationsAsFlow(): Flow<List<DownloadStatOperation>> {
-        return handler.subscribeToList{ download_statQueries.getStatOperations(DownloadStatActionMapper) }
+        return handler.subscribeToList { download_statQueries.getStatOperations(DownloadStatActionMapper) }
     }
 
     override suspend fun insert(operation: DownloadStatOperation) {
