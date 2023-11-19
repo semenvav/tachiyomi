@@ -54,6 +54,8 @@ import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
+import tachiyomi.domain.stat.interactor.AddDownloadStatOperation
+import tachiyomi.domain.stat.model.DownloadStatOperation
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -75,6 +77,7 @@ class Downloader(
     private val sourceManager: SourceManager = Injekt.get(),
     private val chapterCache: ChapterCache = Injekt.get(),
     private val downloadPreferences: DownloadPreferences = Injekt.get(),
+    private val addDownloadStatOperation: AddDownloadStatOperation = Injekt.get(),
     private val xml: XML = Injekt.get(),
     private val getCategories: GetCategories = Injekt.get(),
 ) {
@@ -405,6 +408,22 @@ class Downloader(
             cache.addChapter(chapterDirname, mangaDir, download.manga)
 
             DiskUtil.createNoMediaFile(tmpDir, context)
+
+            addDownloadStatOperation.await(
+                DownloadStatOperation.create().copy(
+                    mangaId = download.manga.id,
+                    size = DiskUtil.getDirectorySize(
+                        File(
+                            provider.findChapterDir(
+                                download.chapter.name,
+                                download.chapter.scanlator,
+                                download.manga.title,
+                                download.source,
+                            )?.filePath!!,
+                        ),
+                    ),
+                ),
+            )
 
             download.status = Download.State.DOWNLOADED
         } catch (error: Throwable) {

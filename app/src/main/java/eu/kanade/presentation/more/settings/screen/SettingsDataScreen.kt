@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import eu.kanade.presentation.more.download.DownloadStatsScreen
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.data.CreateBackupScreen
 import eu.kanade.presentation.more.settings.widget.BasePreferenceWidget
@@ -255,6 +256,7 @@ object SettingsDataScreen : SearchableSettings {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
         val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
+        val navigator = LocalNavigator.currentOrThrow
 
         val chapterCache = remember { Injekt.get<ChapterCache>() }
         var cacheReadableSizeSema by remember { mutableIntStateOf(0) }
@@ -286,6 +288,10 @@ object SettingsDataScreen : SearchableSettings {
                 Preference.PreferenceItem.SwitchPreference(
                     pref = libraryPreferences.autoClearChapterCache(),
                     title = stringResource(MR.strings.pref_auto_clear_chapter_cache),
+                ),
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(MR.strings.label_download_stats),
+                    onClick = { navigator.push(DownloadStatsScreen()) },
                 ),
             ),
         )

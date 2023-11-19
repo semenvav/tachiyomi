@@ -31,6 +31,7 @@
     <string name="label_backup">Backup and restore</string>
     <string name="label_data_storage">Data and storage</string>
     <string name="label_stats">Statistics</string>
+    <string name="label_download_stats">Download statistics</string>
     <string name="label_migration">Migrate</string>
     <string name="label_extensions">Extensions</string>
     <string name="label_extension_info">Extension info</string>
@@ -165,6 +166,11 @@
     <string name="action_start_downloading_now">Start downloading now</string>
     <string name="action_faq_and_guides">FAQ and Guides</string>
     <string name="action_not_now">Not now</string>
+
+    <!-- downloads stats screen -->
+    <string name="label_download_stats_overall_tab">Overall</string>
+    <string name="label_size">Size</string>
+    <string name="deleted_chapters">Deleted chapters</string>
 
     <!-- Operations -->
     <string name="loading">Loading…</string>

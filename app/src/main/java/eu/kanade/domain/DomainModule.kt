@@ -29,6 +29,7 @@ import tachiyomi.data.manga.MangaRepositoryImpl
 import tachiyomi.data.release.ReleaseServiceImpl
 import tachiyomi.data.source.SourceRepositoryImpl
 import tachiyomi.data.source.StubSourceRepositoryImpl
+import tachiyomi.data.stat.DownloadStatRepositoryImpl
 import tachiyomi.data.track.TrackRepositoryImpl
 import tachiyomi.data.updates.UpdatesRepositoryImpl
 import tachiyomi.domain.category.interactor.CreateCategoryWithName
@@ -72,6 +73,9 @@ import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.domain.source.interactor.GetSourcesWithNonLibraryManga
 import tachiyomi.domain.source.repository.SourceRepository
 import tachiyomi.domain.source.repository.StubSourceRepository
+import tachiyomi.domain.stat.interactor.AddDownloadStatOperation
+import tachiyomi.domain.stat.interactor.GetDownloadStatOperations
+import tachiyomi.domain.stat.repository.DownloadStatRepository
 import tachiyomi.domain.track.interactor.DeleteTrack
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.interactor.GetTracksPerManga
@@ -167,5 +171,9 @@ class DomainModule : InjektModule {
         addFactory { ToggleLanguage(get()) }
         addFactory { ToggleSource(get()) }
         addFactory { ToggleSourcePin(get()) }
+
+        addSingletonFactory<DownloadStatRepository> { DownloadStatRepositoryImpl(get()) }
+        addFactory { GetDownloadStatOperations(get()) }
+        addFactory { AddDownloadStatOperation(get()) }
     }
 }

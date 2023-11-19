@@ -4,6 +4,7 @@ import android.content.Context
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.util.storage.DiskUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.drop
@@ -22,9 +23,12 @@ import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
+import tachiyomi.domain.stat.interactor.AddDownloadStatOperation
+import tachiyomi.domain.stat.model.DownloadStatOperation
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.File
 
 /**
  * This class is used to manage chapter downloads in the application. It must be instantiated once
@@ -38,6 +42,7 @@ class DownloadManager(
     private val getCategories: GetCategories = Injekt.get(),
     private val sourceManager: SourceManager = Injekt.get(),
     private val downloadPreferences: DownloadPreferences = Injekt.get(),
+    private val addDownloadStatOperation: AddDownloadStatOperation = Injekt.get(),
 ) {
 
     /**
@@ -224,6 +229,13 @@ class DownloadManager(
             removeFromDownloadQueue(filteredChapters)
 
             val (mangaDir, chapterDirs) = provider.findChapterDirs(filteredChapters, manga, source)
+            addDownloadStatOperation.await(
+                DownloadStatOperation.create().copy(
+                    mangaId = manga.id,
+                    size = chapterDirs.sumOf { DiskUtil.getDirectorySize(File(it.filePath!!)) } * -1,
+                    units = filteredChapters.size.toLong() * -1,
+                ),
+            )
             chapterDirs.forEach { it.delete() }
             cache.removeChapters(filteredChapters, manga)
 
@@ -246,7 +258,18 @@ class DownloadManager(
             if (removeQueued) {
                 downloader.removeFromQueue(manga)
             }
-            provider.findMangaDir(manga.title, source)?.delete()
+            val mangaDir = provider.findMangaDir(manga.title, source)
+            val dirSize = DiskUtil.getDirectorySize(File(mangaDir?.filePath!!))
+            if (dirSize > 0) {
+                addDownloadStatOperation.await(
+                    DownloadStatOperation.create().copy(
+                        mangaId = manga.id,
+                        size = dirSize * -1,
+                        units = cache.getDownloadCount(manga).toLong() * -1,
+                    ),
+                )
+            }
+            mangaDir.delete()
             cache.removeManga(manga)
 
             // Delete source directory if empty
